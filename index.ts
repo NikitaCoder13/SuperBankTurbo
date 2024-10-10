@@ -177,3 +177,168 @@ class BankBranch {
         this.accounts = accounts;
     }
 }
+
+
+// ----------------------------------------------
+
+
+// Спринт 3. АБСТРАКТНЫЕ КЛАССЫ, ИНТЕРФЕЙСЫ
+
+/**
+ * Интерфейс IAccount описывает основные операции с банковским счетом.
+ */
+interface IAccount {
+    deposit(amount: number): void;
+    withdraw(amount: number): void;
+    getBalance(): number;
+}
+
+/**
+ * Абстрактный класс Transaction представляет финансовую транзакцию.
+ * Он содержит абстрактный метод для выполнения транзакции.
+ */
+abstract class Transaction {
+    protected amount: number; // Сумма транзакции
+
+    constructor(amount: number) {
+        this.amount = amount; // Инициализация суммы транзакции
+    }
+
+    /**
+     * Абстрактный метод для выполнения транзакции.
+     * Должен быть реализован в подклассах.
+     */
+    abstract execute(): void;
+}
+
+// обновляем класс Account, чтобы он реализовывал интерфейс IAccount
+class Account implements IAccount {
+    protected accountNumber: string;
+    private balance: number;
+
+    constructor(accountNumber: string, initialBalance: number) {
+        this.accountNumber = accountNumber;
+        this.balance = initialBalance;
+    }
+
+    public deposit(amount: number): void {
+        if (amount > 0) {
+            this.balance += amount;
+        } else {
+            throw new Error("Сумма должна быть положительной");
+        }
+    }
+
+    public withdraw(amount: number): void {
+        if (amount > 0 && amount <= this.balance) {
+            this.balance -= amount;
+        } else {
+            throw new Error("Недостаточно средств или неверная сумма");
+        }
+    }
+
+    public getBalance(): number {
+        return this.balance;
+    }
+}
+
+// Класс SavingsAccount
+class SavingsAccount extends Account {
+    private interestRate: number;
+
+    constructor(accountNumber: string, initialBalance: number, interestRate: number) {
+        super(accountNumber, initialBalance);
+        this.interestRate = interestRate;
+    }
+
+    public applyInterest(): void {
+        const interest = this.getBalance() * this.interestRate / 100;
+        this.deposit(interest);
+        console.log(`Начислены проценты: ${interest}`);
+    }
+}
+
+// Класс CheckingAccount
+class CheckingAccount extends Account {
+    public withdraw(amount: number): void {
+        if (amount > 1000) {
+            throw new Error("Снятие более 1000 требует дополнительного подтверждения");
+        }
+        super.withdraw(amount);
+    }
+}
+
+/**
+ * Класс DepositTransaction представляет транзакцию внесения средств.
+ */
+class DepositTransaction extends Transaction {
+    private account: Account; // Счет, на который будет внесена сумма
+
+    constructor(account: Account, amount: number) {
+        super(amount); // Вызов конструктора базового класса
+        this.account = account; // Инициализация счета
+    }
+
+    /**
+     * Реализация метода execute для внесения средств на счет.
+     */
+    public execute(): void {
+        this.account.deposit(this.amount); // Внесение суммы на счет
+        console.log(`Внесено ${this.amount} на счет ${this.account['accountNumber']}`);
+    }
+}
+
+/**
+ * Класс WithdrawTransaction представляет транзакцию снятия средств.
+ */
+class WithdrawTransaction extends Transaction {
+    private account: Account; // Счет, с которого будет снята сумма
+
+    constructor(account: Account, amount: number) {
+        super(amount); // Вызов конструктора базового класса
+        this.account = account; // Инициализация счета
+    }
+
+    /**
+     * Реализация метода execute для снятия средств со счета.
+     */
+    public execute(): void {
+        this.account.withdraw(this.amount); // Снятие суммы со счета
+        console.log(`Снято ${this.amount} с счета ${this.account['accountNumber']}`);
+    }
+}
+
+// Пример использования
+const savingsAcc = new SavingsAccount("SAV123", 1000, 5); // Создание сберегательного счета
+const checkingAcc = new CheckingAccount("CHK456", 2000); // Создание расчетного счета
+
+// Применение процентов к сберегательному счету
+savingsAcc.applyInterest(); // Начисление процентов
+
+// Выполнение транзакций
+const depositTransaction = new DepositTransaction(savingsAcc, 500); // Создание транзакции внесения
+depositTransaction.execute(); // Выполнение транзакции внесения
+
+const withdrawTransaction = new WithdrawTransaction(checkingAcc, 300); // Создание транзакции снятия
+withdrawTransaction.execute(); // Выполнение транзакции снятия
+
+// Проверка балансов
+console.log(`Баланс сберегательного счета: ${savingsAcc.getBalance()}`); // Вывод баланса сберегательного счета
+console.log(`Баланс расчетного счета: ${checkingAcc.getBalance()}`); // Вывод баланса расчетного счета
+
+// ----------------------------------
+
+// Интерфейс определяет контракт, который должны выполнять классы, его реализующие.
+// Это означает, что любой класс, который реализует интерфейс, гарантированно будет иметь определенные методы и свойства. 
+// Это особенно полезно при работе в команде или разработке крупных приложений
+
+// абстрактные методы и свойства - виртуальные, но не содержат реализации, обязаны быть переопределены
+// в классе наследнике (с помощью override в C#)
+
+// абстрактные классы могут содержать не абстрактные методы и свойства (не могут быть декорированы static, sealed)
+
+// абстрактные могут наследоваться как от абстрактных так и от обычного
+
+// инерфейс содержит сигнатуры методов, свойств без модификаторов доступа
+// у класса может быть один предок, но он может реализовывать множество интерфейсов
+
