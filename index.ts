@@ -342,3 +342,251 @@ console.log(`Баланс расчетного счета: ${checkingAcc.getBala
 // инерфейс содержит сигнатуры методов, свойств без модификаторов доступа
 // у класса может быть один предок, но он может реализовывать множество интерфейсов
 
+// ----------------------------------
+
+// СПРИНТ 4. МАССИВЫ, ИНДЕКСАТОРЫ, КОЛЛЕКЦИИ, 
+// ПАРАМЕТРИЗИРОВАННЫЕ КОЛЛЕКЦИИ
+
+// Интерфейс IAccount
+interface IAccount {
+    deposit(amount: number): void;
+    withdraw(amount: number): void;
+    getBalance(): number;
+}
+
+// Класс Account
+class Account implements IAccount {
+    protected accountNumber: string;
+    private balance: number;
+
+    // Одномерный массив для хранения транзакций
+    private transactions: number[];
+
+    constructor(accountNumber: string, initialBalance: number) {
+        this.accountNumber = accountNumber;
+        this.balance = initialBalance;
+        this.transactions = []; // Инициализация одномерного массива
+    }
+
+    public deposit(amount: number): void {
+        if (amount > 0) {
+            this.balance += amount;
+            this.transactions.push(amount); // Добавление транзакции в массив
+        } else {
+            throw new Error("Сумма должна быть положительной");
+        }
+    }
+
+    public withdraw(amount: number): void {
+        if (amount > 0 && amount <= this.balance) {
+            this.balance -= amount;
+            this.transactions.push(-amount); // Добавление транзакции в массив
+        } else {
+            throw new Error("Недостаточно средств или неверная сумма");
+        }
+    }
+
+    public getBalance(): number {
+        return this.balance;
+    }
+
+    // Метод для отображения всех транзакций (многомерный массив)
+    public getTransactions(): number[][] {
+        // Возвращаем многомерный массив, где каждая транзакция представлена как [номер, сумма]
+        return this.transactions.map((transaction, index) => [index+1, transaction]);
+    }
+
+    // Метод для внесения нескольких сумм с использованием params
+    public depositMultiple(...amounts: number[]): void {
+        amounts.forEach((amount) => {
+            this.deposit(amount); // Вызов метода deposit для каждой суммы
+        });
+    }
+}
+
+// Класс SavingsAccount
+class SavingsAccount extends Account {
+    private interestRate: number;
+
+    constructor(accountNumber: string, initialBalance: number, interestRate: number) {
+        super(accountNumber, initialBalance);
+        this.interestRate = interestRate;
+    }
+
+    public applyInterest(): void {
+        const interest = this.getBalance() * this.interestRate / 100;
+        this.deposit(interest);
+        console.log(`Начислены проценты: ${interest}`);
+    }
+}
+
+// Класс CheckingAccount
+class CheckingAccount extends Account {
+    public withdraw(amount: number): void {
+        if (amount > 1000) {
+            throw new Error("Снятие более 1000 требует дополнительного подтверждения");
+        }
+        super.withdraw(amount);
+    }
+}
+
+// Реализация коллекций
+
+// 1. ArrayList (используем массив)
+let accountList: Account[] = [];
+accountList.push(new SavingsAccount("SAV123", 1000, 5));
+accountList.push(new CheckingAccount("CHK456", 2000));
+
+// 2. Queue (очередь)
+class Queue<T> {
+    private items: T[] = [];
+
+    public enqueue(item: T): void {
+        this.items.push(item);
+    }
+
+    public dequeue(): T | undefined {
+        return this.items.shift();
+    }
+
+    public isEmpty(): boolean {
+        return this.items.length === 0;
+    }
+}
+
+const transactionQueue = new Queue<string>();
+transactionQueue.enqueue("Deposit $500");
+transactionQueue.enqueue("Withdraw $200");
+
+// 3. Stack (стек)
+class Stack<T> {
+    private items: T[] = [];
+
+    public push(item: T): void {
+        this.items.push(item);
+    }
+
+    public pop(): T | undefined {
+        return this.items.pop();
+    }
+
+    public isEmpty(): boolean {
+        return this.items.length === 0;
+    }
+}
+
+const transactionStack = new Stack<string>();
+transactionStack.push("Deposit $500");
+transactionStack.push("Withdraw $200");
+
+// 4. List (обобщенный список)
+let transactionList: Array<string> = [];
+transactionList.push("Deposit $500");
+transactionList.push("Withdraw $200");
+
+// 5. Dictionary (словарь)
+let accountDictionary: { [key: string]: Account } = {};
+accountDictionary["SAV123"] = new SavingsAccount("SAV123", 1000, 5);
+accountDictionary["CHK456"] = new CheckingAccount("CHK456", 2000);
+
+
+// Пример использования
+
+const account = new Account("ACC123", 1000);
+account.deposit(500); // Внесение 500
+account.withdraw(200); // Снятие 200
+
+// Внесение нескольких сумм с использованием params
+account.depositMultiple(100, 200, 300);
+
+// Проверка баланса и транзакций
+console.log(`Баланс: ${account.getBalance()}`);
+console.log(`Транзакции: ${JSON.stringify(account.getTransactions())}`);
+
+const savingsAcc = accountDictionary["SAV123"];
+savingsAcc.deposit(500);
+savingsAcc.applyInterest();
+console.log(`Баланс сберегательного счета ${savingsAcc['accountNumber']}: ${savingsAcc.getBalance()}`);
+
+const checkingAcc = accountDictionary["CHK456"];
+checkingAcc.withdraw(300);
+console.log(`Баланс расчетного счета ${checkingAcc['accountNumber']}: ${checkingAcc.getBalance()}`);
+
+console.log(`Транзакции из очереди:`)
+while (!transactionQueue.isEmpty()) {
+    console.log(transactionQueue.dequeue());
+}
+
+console.log(`Транзакции из стека:`)
+while (!transactionStack.isEmpty()) {
+    console.log(transactionStack.pop());
+}
+
+console.log(`Транзакции из списка:`)
+transactionList.forEach(transaction => console.log(transaction));
+
+
+// ОТВЕТЫ НА ВОПРОСЫ
+// ----------------------------------------------------
+// 1. Массив — это структура данных, которая позволяет хранить несколько значений одного типа под одним именем. Каждый элемент массива доступен через уникальный индекс.
+
+// 2. Одномерный массив — это массив, содержащий элементы, доступные по одному индексу. Он представляет собой последовательность элементов.
+
+// 3. Многомерный массив — это массив, содержащий более одного измерения (например, двумерные или трехмерные массивы). Элементы доступны по нескольким индексам.
+
+// 4. Индексаторы позволяют обращаться к классу как к массиву. Для описания индексатора используется ключевое слово this
+// [тип индекса]. Пример: public Man this[int i] = _man[i]/
+
+// 5. У класса может быть несколько индексаторов, но каждый из них должен иметь уникальный тип параметров. Это позволяет перегружать индексаторы.
+
+// 6. Ключевое слово params позволяет передавать переменное количество аргументов в метод.
+// Пример: 
+// public void PrintNumbers(params int[] numbers)
+// {
+//     foreach (var number in numbers)
+//     {
+//         Console.WriteLine(number);
+//     }
+// }
+
+// // Вызов метода с произвольным количеством аргументов
+// PrintNumbers(1, 2, 3, 4);
+
+// 7. ArrayList — это коллекция, которая может хранить объекты любого типа и автоматически изменяет свой размер при добавлении или удалении элементов. Однако она не типобезопасна.
+// Пример: 
+// ArrayList list = new ArrayList();
+// list.Add(1);
+// list.Add("Hello");
+
+// 8. Queue — это коллекция, реализующая принцип FIFO (первый пришел — первый вышел). Элементы добавляются в конец очереди и извлекаются с начала.
+// Пример:
+// Queue queue = new Queue();
+// queue.Enqueue(1); // Добавление элемента в очередь
+// int first = (int)queue.Dequeue(); // Извлечение первого элемента
+
+// 9.Stack — это коллекция, реализующая принцип LIFO (последний пришел — первый вышел). Элементы добавляются и извлекаются с одного конца.
+// Пример:
+// Stack stack = new Stack();
+// stack.Push(1); // Добавление элемента в стек
+// int last = (int)stack.Pop(); // Извлечение последнего добавленного элемента
+
+// 10.Основной недостаток коллекции с элементами типа object заключается в том, что она не типобезопасна. Это может привести к ошибкам времени выполнения при попытке привести объекты к неверному типу.
+// Пример:
+// ArrayList list = new ArrayList();
+// list.Add(1);
+// list.Add("string");
+// // Приведение типа может вызвать InvalidCastException
+// int number = (int)list[1]; // Ошибка времени выполнения
+
+// 11.List<T> — это обобщенная коллекция, которая хранит элементы одного типа и обеспечивает типобезопасность и динамическое изменение размера.
+// Пример:
+// List<int> numbers = new List<int>();
+// numbers.Add(1);
+// numbers.Add(2);
+
+// 12.Dictionary<TKey,TValue> — это обобщенная коллекция для хранения пар "ключ-значение". Она обеспечивает быстрый доступ к значениям по ключам.
+// Пример:
+// Dictionary<string, int> ages = new Dictionary<string, int>();
+// ages["Alice"] = 30;
+// ages["Bob"] = 25;
+// int aliceAge = ages["Alice"]; // Получение возраста Алисы
