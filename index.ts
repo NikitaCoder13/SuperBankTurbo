@@ -590,3 +590,319 @@ transactionList.forEach(transaction => console.log(transaction));
 // ages["Alice"] = 30;
 // ages["Bob"] = 25;
 // int aliceAge = ages["Alice"]; // Получение возраста Алисы
+
+
+// ------------------------------------------------------------------
+
+
+import * as os from "os";
+import * as fs from "fs";
+import * as path from "path";
+import * as crypto from "crypto";
+
+// СПРИНТ 5. РАБОТА С ФАЙЛОВОЙ СИСТЕМОЙ
+
+// Интерфейс IAccount
+interface IAccount {
+  deposit(amount: number): void;
+  withdraw(amount: number): void;
+  getBalance(): number;
+}
+
+// Класс Account
+class Account implements IAccount {
+  protected accountNumber: string;
+  private balance: number;
+
+  // Одномерный массив для хранения транзакций
+  private transactions: number[];
+
+  constructor(accountNumber: string, initialBalance: number) {
+    this.accountNumber = accountNumber;
+    this.balance = initialBalance;
+    this.transactions = []; // Инициализация одномерного массива
+  }
+
+  public deposit(amount: number): void {
+    if (amount > 0) {
+      this.balance += amount;
+      this.transactions.push(amount); // Добавление транзакции в массив
+    } else {
+      throw new Error("Сумма должна быть положительной");
+    }
+  }
+
+  public withdraw(amount: number): void {
+    if (amount > 0 && amount <= this.balance) {
+      this.balance -= amount;
+      this.transactions.push(-amount); // Добавление транзакции в массив
+    } else {
+      throw new Error("Недостаточно средств или неверная сумма");
+    }
+  }
+
+  public getBalance(): number {
+    return this.balance;
+  }
+
+  // Метод для отображения всех транзакций (многомерный массив)
+  public getTransactions(): number[][] {
+    // Возвращаем многомерный массив, где каждая транзакция представлена как [номер, сумма]
+    return this.transactions.map((transaction, index) => [
+      index + 1,
+      transaction,
+    ]);
+  }
+
+  // Метод для внесения нескольких сумм с использованием params
+  public depositMultiple(...amounts: number[]): void {
+    amounts.forEach((amount) => {
+      this.deposit(amount); // Вызов метода deposit для каждой суммы
+    });
+  }
+}
+
+console.log("// 5.1. Получение информации о логических дисках компьютера");
+
+function getDiskInfo() {
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  console.log(`Общая память: ${totalMemory}`);
+  console.log(`Свободная память: ${freeMemory}`);
+}
+
+getDiskInfo();
+
+console.log("// 5.2. Работа с файлами");
+
+class FileManager {
+  static createFile(fileName: string, content: string): void {
+    fs.writeFileSync(fileName, content);
+  }
+
+  static appendToFile(fileName: string, content: string): void {
+    fs.appendFileSync(fileName, content);
+  }
+
+  static moveFile(oldPath: string, newPath: string): void {
+    fs.renameSync(oldPath, newPath);
+  }
+
+  static copyFile(source: string, destination: string): void {
+    fs.copyFileSync(source, destination);
+  }
+
+  static fileExists(fileName: string): boolean {
+    return fs.existsSync(fileName);
+  }
+
+  static deleteFile(fileName: string): void {
+    fs.unlinkSync(fileName);
+  }
+}
+
+// Примеры использования FileManager
+const fileName = "test.txt";
+FileManager.createFile(fileName, "Hello World!");
+console.log(FileManager.fileExists(fileName)); // true
+FileManager.appendToFile(fileName, "\nAppended text.");
+FileManager.moveFile(fileName, "newTest.txt");
+console.log(FileManager.fileExists("newTest.txt")); // true
+FileManager.deleteFile("newTest.txt");
+
+FileManager.createFile(fileName, "Hello World!");
+
+console.log("// 5.3. Получение MD5-хеша файла");
+
+function getMD5Hash(filePath: string): string {
+  const fileBuffer = fs.readFileSync(filePath);
+  const hash = crypto.createHash("md5").update(fileBuffer).digest("hex");
+  return hash;
+}
+
+// Пример использования
+const hash = getMD5Hash("test.txt");
+console.log(`MD5 хеш файла: ${hash}`);
+
+console.log("// 5.4. FileInfo");
+
+class FileInfo {
+  static getInfo(filePath: string) {
+    const stats = fs.statSync(filePath);
+    return {
+      size: stats.size,
+      createdAt: stats.birthtime,
+      modifiedAt: stats.mtime,
+      isDirectory: stats.isDirectory(),
+      isFile: stats.isFile(),
+    };
+  }
+}
+
+// Пример использования
+const info = FileInfo.getInfo("test.txt");
+console.log(info);
+
+console.log("// 5.5. Path");
+
+const filePath = path.join(__dirname, "test.txt");
+console.log(`Полный путь к файлу: ${filePath}`);
+
+console.log("// 5.6. Directory");
+
+class DirectoryManager {
+  static createDirectory(dirName: string): void {
+    if (!fs.existsSync(dirName)) {
+      fs.mkdirSync(dirName);
+    }
+  }
+
+  static listFilesInDirectory(dirName: string): string[] {
+    return fs.readdirSync(dirName);
+  }
+}
+
+// Пример использования
+DirectoryManager.createDirectory("testDir");
+console.log(DirectoryManager.listFilesInDirectory("."));
+
+console.log("// 5.7. Stream");
+
+function readStreamExample(filePath: string) {
+  const readStream = fs.createReadStream(filePath);
+
+  readStream.on("data", (chunk) => {
+    console.log(`Получен кусок данных: ${chunk}`);
+  });
+
+  readStream.on("end", () => {
+    console.log("Чтение завершено.");
+  });
+}
+
+// Пример использования
+readStreamExample("test.txt");
+
+console.log("// 5.8. StreamWriter (или WriteStream)");
+
+function writeStreamExample(filePath: string) {
+  const writeStream = fs.createWriteStream(filePath);
+
+  writeStream.write("Hello World!\n");
+  writeStream.write("Запись через стрим.\n");
+
+  writeStream.end(() => {
+    console.log("Запись завершена.");
+  });
+}
+
+// Пример использования
+writeStreamExample("streamedOutput.txt");
+
+console.log(`// 5.9. Бинарная сериализация (BinaryFormatter)
+// TypeScript не поддерживает бинарную сериализацию напрямую,
+// но можно использовать JSON для сериализации объектов.`);
+
+function serializeToJson(object: any): string {
+  return JSON.stringify(object);
+}
+
+function deserializeFromJson(jsonString: string): any {
+  return JSON.parse(jsonString);
+}
+
+// Пример использования
+const accountData = new Account("12345", 1000);
+const serializedData = serializeToJson(accountData);
+console.log(serializedData);
+const deserializedData = deserializeFromJson(serializedData);
+console.log(deserializedData);
+
+console.log("// 5.10. Сериализация JSON");
+
+const jsonString = serializeToJson(accountData);
+console.log(`Сериализованный объект в JSON: ${jsonString}`);
+
+const deserializedAccount = deserializeFromJson(jsonString);
+console.log(`Десериализованный объект:`, deserializedAccount);
+
+// npx tsc
+// npm start
+
+// ОТВЕТЫ НА ВОПРОСЫ
+// ----------------------------------------------------
+
+// 1. Как получить список логических дисков в языке C#?
+
+// Для получения списка логических дисков в C# можно использовать класс DriveInfo из
+// пространства имен System.IO.
+
+// 2. Расскажите о классе File.
+
+// Класс File предоставляет статические методы для выполнения операций с файлами,
+// таких как создание, копирование, перемещение, удаление и открытие файлов.
+// Он определён в пространстве имен System.IO. Основные методы включают:
+// Create(): Создаёт новый файл.
+// Delete(): Удаляет файл.
+// Exists(): Проверяет существование файла.
+// ReadAllText(): Читает содержимое файла в строку.
+
+// 3. Расскажите о классе FileInfo.
+
+// Класс FileInfo предоставляет экземплярные методы для работы с файлами и их атрибутами.
+// В отличие от класса File, который использует статические методы,
+// FileInfo позволяет работать с конкретным файлом после его создания.
+
+// 4. В чем отличие классов File и FileInfo?
+
+// Статические vs. Экземплярные методы:
+// - File использует статические методы, которые не требуют создания экземпляра класса.
+// - FileInfo требует создания объекта для работы с конкретным файлом.
+// Атрибуты файла:
+// - File не предоставляет прямого доступа к атрибутам файла.
+// - FileInfo позволяет получать и устанавливать атрибуты файла, такие как размер, дата создания и т.д.
+
+// 5. Для чего служит класс Path?
+
+// Класс Path предоставляет методы для работы с путями файловой системы.
+// Он позволяет объединять пути, получать расширения файлов и
+// выполнять другие операции, связанные с путями
+
+// 6. Расскажите о классе Directory.
+
+// Класс Directory предоставляет статические методы для работы с директориями (папками).
+// Он позволяет создавать, удалять и получать информацию о папках.
+
+// 7. Расскажите о типе потока Stream.
+
+// Тип потока Stream является абстрактным классом, который представляет поток данных.
+// Он служит базовым классом для различных типов потоков, таких как файловые потоки (FileStream),
+// потоки памяти (MemoryStream) и другие. Потоки могут быть использованы для чтения и
+// записи данных в различные источники.
+
+// 8. Расскажите о потоках StreamWriter и StreamReader.
+
+// StreamWriter: Используется для записи текстовых данных в поток. Пример:
+// csharp
+// using (StreamWriter writer = new StreamWriter("output.txt"))
+// {
+//     writer.WriteLine("Hello World!");
+// }
+
+// StreamReader: Используется для чтения текстовых данных из потока. Пример:
+// csharp
+// using (StreamReader reader = new StreamReader("output.txt"))
+// {
+//     string content = reader.ReadToEnd();
+//     Console.WriteLine(content); // Вывод: Hello World!
+// }
+
+// 9. Расскажите про бинарную сериализацию.
+
+// Бинарная сериализация — это процесс преобразования объекта в бинарный формат для хранения
+// или передачи. В C# это можно сделать с помощью класса BinaryFormatter.
+
+// 10. Расскажите про JSON-сериализацию.
+
+// JSON-сериализация преобразует объекты в строку формата JSON, что удобно для передачи
+// данных по сети или хранения. В C# это можно сделать с помощью библиотеки Newtonsoft.Json.
