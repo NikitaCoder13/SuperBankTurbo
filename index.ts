@@ -906,3 +906,184 @@ console.log(`Десериализованный объект:`, deserializedAcco
 
 // JSON-сериализация преобразует объекты в строку формата JSON, что удобно для передачи
 // данных по сети или хранения. В C# это можно сделать с помощью библиотеки Newtonsoft.Json.
+
+// --------------------------------
+
+// СПРИНТ 6. Unit Тестирование
+
+interface IAccount {
+  deposit(amount: number): void;
+  withdraw(amount: number): void;
+  getBalance(): number;
+}
+
+// Класс Account
+class Account implements IAccount {
+  protected accountNumber: string;
+  private balance: number;
+
+  // Одномерный массив для хранения транзакций
+  private transactions: number[];
+
+  constructor(accountNumber: string, initialBalance: number) {
+    this.accountNumber = accountNumber;
+    this.balance = initialBalance;
+    this.transactions = []; // Инициализация одномерного массива
+  }
+
+  public deposit(amount: number): void {
+    if (amount > 0) {
+      this.balance += amount;
+      this.transactions.push(amount); // Добавление транзакции в массив
+    } else {
+      throw new Error("Сумма должна быть положительной");
+    }
+  }
+
+  public withdraw(amount: number): void {
+    if (amount > 0 && amount <= this.balance) {
+      this.balance -= amount;
+      this.transactions.push(-amount); // Добавление транзакции в массив
+    } else {
+      throw new Error("Недостаточно средств или неверная сумма");
+    }
+  }
+
+  public getBalance(): number {
+    return this.balance;
+  }
+
+  // Метод для отображения всех транзакций (многомерный массив)
+  public getTransactions(): number[][] {
+    // Возвращаем многомерный массив, где каждая транзакция представлена как [номер, сумма]
+    return this.transactions.map((transaction, index) => [
+      index + 1,
+      transaction,
+    ]);
+  }
+
+  // Метод для внесения нескольких сумм с использованием params
+  public depositMultiple(...amounts: number[]): void {
+    amounts.forEach((amount) => {
+      this.deposit(amount); // Вызов метода deposit для каждой суммы
+    });
+  }
+}
+
+// Класс SavingsAccount
+class SavingsAccount extends Account {
+  private interestRate: number;
+
+  constructor(
+    accountNumber: string,
+    initialBalance: number,
+    interestRate: number
+  ) {
+    super(accountNumber, initialBalance);
+    this.interestRate = interestRate;
+  }
+
+  public applyInterest(): void {
+    const interest = (this.getBalance() * this.interestRate) / 100;
+    this.deposit(interest);
+    console.log(`Начислены проценты: ${interest}`);
+  }
+}
+
+// Класс CheckingAccount
+class CheckingAccount extends Account {
+  public withdraw(amount: number): void {
+    if (amount > 1000) {
+      throw new Error(
+        "Снятие более 1000 требует дополнительного подтверждения"
+      );
+    }
+    super.withdraw(amount);
+  }
+}
+
+// 5 +
+
+// Тест на успешное внесение суммы:
+test("должен успешно внести сумму", () => {
+  const account = new Account("ACC123", 1000);
+  account.deposit(500);
+  expect(account.getBalance()).toBe(1500);
+});
+
+// Тест на успешное снятие суммы:
+test("должен успешно снять сумму", () => {
+  const account = new Account("ACC123", 1000);
+  account.withdraw(200);
+  expect(account.getBalance()).toBe(800);
+});
+
+// Тест на успешное получение баланса:
+test("должен вернуть правильный баланс", () => {
+  const account = new Account("ACC123", 1000);
+  expect(account.getBalance()).toBe(1000);
+});
+
+// Тест на успешное внесение нескольких сумм:
+test("должен успешно внести несколько сумм", () => {
+  const account = new Account("ACC123", 1000);
+  account.depositMultiple(100, 200, 300);
+  expect(account.getBalance()).toBe(1600);
+});
+
+// Тест на успешное получение транзакций:
+test("должен вернуть правильные транзакции", () => {
+  const account = new Account("ACC123", 1000);
+  account.deposit(500);
+  account.withdraw(200);
+  account.depositMultiple(100, 200, 300);
+  expect(account.getTransactions()).toEqual([
+    [1, 500],
+    [2, -200],
+    [3, 100],
+    [4, 200],
+    [5, 300],
+  ]);
+});
+
+// 5 -
+
+// Тест на внесение отрицательной суммы:
+test("должен выбросить ошибку при внесении отрицательной суммы", () => {
+  const account = new Account("ACC123", 1000);
+  expect(() => account.deposit(-100)).toThrow(
+    "Сумма должна быть положительной"
+  );
+});
+
+// Тест на снятие суммы больше текущего баланса:
+test("должен выбросить ошибку при снятии суммы больше баланса", () => {
+  const account = new Account("ACC123", 1000);
+  expect(() => account.withdraw(1500)).toThrow(
+    "Недостаточно средств или неверная сумма"
+  );
+});
+
+// Тест на снятие отрицательной суммы:
+test("должен выбросить ошибку при снятии отрицательной суммы", () => {
+  const account = new Account("ACC123", 1000);
+  expect(() => account.withdraw(-100)).toThrow(
+    "Недостаточно средств или неверная сумма"
+  );
+});
+
+// Тест на снятие суммы более 1000 в CheckingAccount:
+test("должен выбросить ошибку при снятии более 1000 из CheckingAccount", () => {
+  const checkingAccount = new CheckingAccount("ACC456", 2000);
+  expect(() => checkingAccount.withdraw(1500)).toThrow(
+    "Снятие более 1000 требует дополнительного подтверждения"
+  );
+});
+
+// Тест на внесение нескольких отрицательных сумм:
+test("должен выбросить ошибку при внесении нескольких отрицательных сумм", () => {
+  const account = new Account("ACC123", 1000);
+  expect(() => account.depositMultiple(100, -200, 300)).toThrow(
+    "Сумма должна быть положительной"
+  );
+});
